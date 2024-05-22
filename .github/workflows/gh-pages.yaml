@@ -26,8 +26,11 @@ jobs:
       - name: Install Nix
         uses: cachix/install-nix-action@v17
         with:
-          extra_nix_config: |
-            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+          nix_path: nixpkgs=channel:nixos-unstable
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Cache
+        uses: DeterminateSystems/magic-nix-cache-action@v2
 
       - name: Build
         run: nix develop --command pnpm build
