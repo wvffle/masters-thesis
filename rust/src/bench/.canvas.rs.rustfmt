@@ -1,0 +1,110 @@
+use std::collections::VecDeque;
+
+use wasm_bindgen::prelude::*;
+use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, Performance};
+use crate::utils::*;
+
+struct Ball {
+    x: f32,
+    y: f32,
+    vx: f32,
+    vy: f32,
+    radius: u8,
+    color: String,
+    mass: u32
+}
+
+impl Ball {
+    fn new(x: f32, y: f32, vx: f32, vy: f32, radius: u8, color: String, mass: u32) -> Self {
+        Self { x, y, vx, vy, radius, color, mass }
+    }
+
+    fn draw(&self, context: &CanvasRenderingContext2d) -> Result<(), JsValue> {
+        context.begin_path();
+        context.arc(self.x as f64, self.y as f64, self.radius as f64, 0.0, 2.0 * std::f64::consts::PI)?;
+        context.set_fill_style(&JsValue::from_str(&self.color));
+        context.fill();
+        Ok(())
+    }
+
+    fn update(&mut self, context: &CanvasRenderingContext2d, width: f32, balls: &Vec<Ball>) -> Result<(), JsValue> {
+        if (self.x + self.radius as f32) >= width || (self.x - self.radius as f32) <= 0.0 {
+            self.vx = -self.vx;
+            self.x += self.vx;
+        }
+
+        if (self.y + self.radius as f32) >= width || (self.y - self.radius as f32) <= 0.0 {
+            self.vy = -self.vy;
+            self.y += self.vy;
+        }
+
+        for ball in balls {
+
+        }
+
+        Ok(())
+    }
+}
+
+fn random(min: f32, max: f32) -> f32 {
+    web_sys::Math::random() * (max - min) + min
+}
+
+#[wasm_bindgen]
+pub fn bouncing_balls(n: usize) -> Result<(), JsValue> {
+    let window = web_sys::window().ok_or("WASM is not running in browser")?;
+    let document = window.document().ok_or("Could not get document")?;
+
+    let canvas = document.get_element_by_id("canvas").ok_or("Could not find #canvas")?;
+    let canvas: HtmlCanvasElement = canvas.dyn_into::<HtmlCanvasElement>()?;
+
+    let context = canvas.get_context("2d")?.ok_or("Could not get 2d context")?;
+    let context: CanvasRenderingContext2d = context.dyn_into::<CanvasRenderingContext2d>()?;
+
+    let width = canvas.width() as f32;
+    let height = canvas.height() as f32;
+
+    let balls: Vec<Ball> = (0..n).map(|_| {
+        let radius = random(1.0, 3.0) as u8;
+        let x = random(radius as f32, width - radius as f32);
+        let y = random(radius as f32, height - radius as f32);
+        let vx = random(-5.0, 5.0);
+        let vy = random(-5.0, 5.0);
+        let color = format!("hsl({}, 70%, 70%)", random(0.0, 360.0));
+        let mass = 10_f32.powi(radius as i32) as u32;
+        Ball::new(x, y, vx, vy, radius, color, mass)
+    }).collect();
+
+    let performance = window.performance().ok_or("Could not get performance")?;
+    fn loop_(context: &CanvasRenderingContext2d, mut balls: Vec<Ball>, width: f32, height: f32, performance: &Performance, last_timestamp: f64, mut fps_avg: VecDeque<f64>) -> Result<(), JsValue> {
+        let timestamp = performance.now();
+
+        context.clear_rect(0.0, 0.0, width as f64, height as f64);
+        context.set_fill_style(&JsValue::from_str("#fff"));
+
+        for mut ball in balls {
+            ball.draw(&context)?;
+            ball.update(&context, width, &balls)?;
+        }
+
+        let delta = last_timestamp - timestamp;
+        fps_avg.push_back(delta);
+        if fps_avg.len() > 10000 {
+            fps_avg.pop_front();
+        }
+
+        let fps = (fps_avg.iter().sum::<f64>() / fps_avg.len() as f64 + 0.5) as u16;
+
+        context.set_fill_style(&JsValue::from_str("red"));
+        context.set_font("12px Arial");
+        context.fill_text(&format!("FPS: {fps}"), 10.0, 20.0);
+
+        loop_(context, balls, width, height, performance, timestamp, fps_avg)
+    }
+
+    let fps_avg: VecDeque<f64> = VecDeque::new();
+    let mut last_timestamp = performance.now();
+    loop_(&context, balls, width, height, &performance, last_timestamp, fps_avg)?;
+
+    Ok(())
+}

@@ -1,0 +1,44 @@
+{
+    "ltex.additionalRules.motherTongue": "en",
+    "ltex.additionalRules.languageModel": "",
+    "ltex.language": "pl-PL",
+    "ltex.hiddenFalsePositives": {
+        
+    
+    },
+    "ltex.dictionary": {
+    
+    },
+    "latex-workshop.latex.recipes": [
+        {
+            "name": "pdflatex ➞ biber ➞ pdflatex × 2",
+            "tools": [
+                "pdflatex",
+                "biber",
+                "pdflatex",
+                "pdflatex"
+            ]
+        },
+    ],
+    "latex-workshop.latex.tools": [
+        {
+            "name": "biber",
+            "command": "biber",
+            "args": [
+                "%DOCFILE%"
+            ],
+            "env": {}
+        },
+        {
+            "name": "pdflatex",
+            "command": "pdflatex",
+            "args": [
+                "-synctex=1",
+                "-interaction=nonstopmode",
+                "-file-line-error",
+                "%DOC%"
+            ],
+            "env": {}
+        },
+    ],
+}

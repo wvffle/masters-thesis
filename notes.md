@@ -1,0 +1,3 @@
+- Rust
+  - Strings
+    - Lepiej jest enkodowac i pracowac na &[u8] - 'Copies the string's contents back and forth between the JavaScript garbage-collected heap and the Wasm linear memory with TextDecoder and TextEncoder' (https://rustwasm.github.io/wasm-bindgen/reference/types/string.html)
