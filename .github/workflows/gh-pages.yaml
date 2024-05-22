@@ -32,6 +32,9 @@ jobs:
       - name: Build Cache
         uses: DeterminateSystems/magic-nix-cache-action@v2
 
+      - name: Install dependencies
+        run: nix develop --command pnpm install
+
       - name: Build
         run: nix develop --command pnpm build
 
