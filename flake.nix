@@ -60,7 +60,7 @@
 
           languages.rust = {
             enable = true;
-            channel = "stable";
+            channel = "stable"; # FIX: remove when upstream fixed: https://github.com/cachix/devenv/issues/1223
             targets = [ "wasm32-unknown-unknown" ];
           };
 
