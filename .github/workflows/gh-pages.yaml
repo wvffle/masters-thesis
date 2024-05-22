@@ -36,7 +36,7 @@ jobs:
         run: nix develop --command pnpm install
 
       - name: Build
-        run: nix develop --command pnpm build
+        run: nix develop --command pnpm build --base "/${{ github.event.repository.name }}/"
 
       - uses: actions/configure-pages@v4
 
