@@ -30,10 +30,7 @@ jobs:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build Cache
-        uses: DeterminateSystems/magic-nix-cache-action@v2
-
-      - name: Install dependencies
-        run: nix develop --command pnpm install
+        uses: DeterminateSystems/magic-nix-cache-action@main
 
       - name: Build
         run: nix develop --command pnpm build --base "/${{ github.event.repository.name }}/"

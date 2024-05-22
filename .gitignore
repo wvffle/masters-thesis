@@ -307,3 +307,4 @@ node_modules/
 /dist/
 /rust/target
 .direnv/
+.devenv/
