@@ -20,14 +20,22 @@
   "devDependencies": {
     "@playwright/test": "1.40.0",
     "@types/node": "^20.11.24",
+    "@types/object-hash": "^3.0.6",
     "vite-plugin-top-level-await": "^1.4.1",
     "vite-plugin-wasm": "^3.3.0"
   },
   "dependencies": {
     "@noble/hashes": "^1.4.0",
+    "@observablehq/plot": "^0.6.14",
     "argon2id": "^1.0.1",
+    "canvas-screenshot": "^4.2.0",
+    "file-saver": "^2.0.5",
+    "html2canvas": "^1.4.1",
+    "idb-keyval": "^6.2.1",
+    "object-hash": "^3.0.0",
     "playwright": "1.40.0",
-    "typescript": "^5.3.3",
+    "transliteration": "^2.3.5",
+    "typescript": "^5.4.5",
     "vite": "^5.1.5"
   }
 }
