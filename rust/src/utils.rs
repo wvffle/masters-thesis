@@ -12,11 +12,6 @@ pub fn set_panic_hook() {
     console_error_panic_hook::set_once();
 }
 
-pub fn initialized(performance: &Performance) -> Result<(), JsValue> {
-    performance.mark("rs-init-end")?;
-    Ok(())
-}
-
 pub fn stop_algorithm(performance: &Performance) -> Result<(), JsValue> {
     performance.mark("rs-alg-end")?;
     Ok(())

@@ -8,8 +8,6 @@ pub fn create_elements(n: usize) -> Result<(), JsValue> {
     let window = web_sys::window().ok_or("WASM is not running in browser")?;
     let performance = window.performance().ok_or("Could not get performance")?;
 
-    initialized(&performance)?;
-
     let document = window.document().ok_or("WASM is not running in browser")?;
 
     let container = document
@@ -32,8 +30,6 @@ pub fn create_elements(n: usize) -> Result<(), JsValue> {
 pub fn update_every_2nd_element() -> Result<(), JsValue> {
     let window = web_sys::window().ok_or("WASM is not running in browser")?;
     let performance = window.performance().ok_or("Could not get performance")?;
-
-    initialized(&performance)?;
 
     let document = window.document().ok_or("WASM is not running in browser")?;
 
@@ -64,8 +60,6 @@ pub fn update_every_2nd_element() -> Result<(), JsValue> {
 pub fn clear_elements() -> Result<(), JsValue> {
     let window = web_sys::window().ok_or("WASM is not running in browser")?;
     let performance = window.performance().ok_or("Could not get performance")?;
-
-    initialized(&performance)?;
 
     let document = window.document().ok_or("WASM is not running in browser")?;
 

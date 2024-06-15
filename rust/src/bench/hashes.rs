@@ -6,7 +6,7 @@ use wasm_bindgen::prelude::*;
 pub fn sha256(data: &[u8]) -> Result<String, JsValue> {
     let window = web_sys::window().ok_or("WASM is not running in browser")?;
     let performance = window.performance().ok_or("Could not get performance")?;
-    initialized(&performance)?;
+
     let mut hash = Hash::create(Algorithms::Sha256);
     start_algorithm(&performance)?;
     let hash = hash
@@ -21,7 +21,7 @@ pub fn sha256(data: &[u8]) -> Result<String, JsValue> {
 pub fn sha512(data: &[u8]) -> Result<String, JsValue> {
     let window = web_sys::window().ok_or("WASM is not running in browser")?;
     let performance = window.performance().ok_or("Could not get performance")?;
-    initialized(&performance)?;
+
     let mut hash = Hash::create(Algorithms::Sha512);
     start_algorithm(&performance)?;
     let hash = hash
@@ -36,7 +36,7 @@ pub fn sha512(data: &[u8]) -> Result<String, JsValue> {
 pub fn argon2() -> Result<String, JsValue> {
     let window = web_sys::window().ok_or("WASM is not running in browser")?;
     let performance = window.performance().ok_or("Could not get performance")?;
-    initialized(&performance)?;
+
     let password = b"password";
     let salt = b"saltsalt";
     start_algorithm(&performance)?;

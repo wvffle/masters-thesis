@@ -8,7 +8,6 @@ const CRC32_POLY: u32 = 0xEDB88320;
 pub fn crc32(data: &[u8]) -> Result<i32, JsValue> {
     let window = web_sys::window().ok_or("WASM is not running in browser")?;
     let performance = window.performance().ok_or("Could not get performance")?;
-    initialized(&performance)?;
 
     start_algorithm(&performance)?;
 
@@ -31,7 +30,6 @@ pub fn crc32(data: &[u8]) -> Result<i32, JsValue> {
 pub fn crc64(data: &[u8]) -> Result<u64, JsValue> {
     let window = web_sys::window().ok_or("WASM is not running in browser")?;
     let performance = window.performance().ok_or("Could not get performance")?;
-    initialized(&performance)?;
 
     start_algorithm(&performance)?;
 
@@ -48,4 +46,18 @@ pub fn crc64(data: &[u8]) -> Result<u64, JsValue> {
     stop_algorithm(&performance)?;
 
     Ok(crc ^ 0xFFFFFFFFFFFFFFFF)
+}
+
+#[wasm_bindgen]
+pub fn crc64_simd(data: &[u8]) -> Result<u64, JsValue> {
+    let window = web_sys::window().ok_or("WASM is not running in browser")?;
+    let performance = window.performance().ok_or("Could not get performance")?;
+
+    start_algorithm(&performance)?;
+    let mut digest = crc64fast::Digest::new();
+    digest.write(data);
+    let result = digest.sum64();
+    stop_algorithm(&performance)?;
+
+    Ok(result)
 }

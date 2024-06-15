@@ -5,7 +5,6 @@ use wasm_bindgen::prelude::*;
 pub fn reencode_strings(data: String) -> Result<String, JsValue> {
     let window = web_sys::window().ok_or("WASM is not running in browser")?;
     let performance = window.performance().ok_or("Could not get performance")?;
-    initialized(&performance)?;
 
     start_algorithm(&performance)?;
     stop_algorithm(&performance)?;
@@ -24,7 +23,6 @@ const BASE64_ALPHABET: [char; 64] = [
 pub fn base64(data: String) -> Result<String, JsValue> {
     let window = web_sys::window().ok_or("WASM is not running in browser")?;
     let performance = window.performance().ok_or("Could not get performance")?;
-    initialized(&performance)?;
 
     start_algorithm(&performance)?;
 
@@ -61,7 +59,6 @@ pub fn base64(data: String) -> Result<String, JsValue> {
 pub fn base64_simd(data: String) -> Result<String, JsValue> {
     let window = web_sys::window().ok_or("WASM is not running in browser")?;
     let performance = window.performance().ok_or("Could not get performance")?;
-    initialized(&performance)?;
 
     start_algorithm(&performance)?;
 

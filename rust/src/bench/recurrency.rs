@@ -1,7 +1,7 @@
 use std::collections::{BTreeMap, HashMap};
 
-use wasm_bindgen::prelude::*;
 use crate::utils::*;
+use wasm_bindgen::prelude::*;
 
 fn recurrent_fib(n: usize) -> i32 {
     if n < 2 {
@@ -45,7 +45,6 @@ fn recurrent_btreemap_fib(n: usize, cache: &mut BTreeMap<usize, i32>) -> i32 {
 pub fn fib(n: usize) -> Result<i32, JsValue> {
     let window = web_sys::window().ok_or("WASM is not running in browser")?;
     let performance = window.performance().ok_or("Could not get performance")?;
-    initialized(&performance)?;
 
     start_algorithm(&performance)?;
 
@@ -55,12 +54,10 @@ pub fn fib(n: usize) -> Result<i32, JsValue> {
     Ok(result)
 }
 
-
 #[wasm_bindgen]
 pub fn fib_hashmap(n: usize) -> Result<i32, JsValue> {
     let window = web_sys::window().ok_or("WASM is not running in browser")?;
     let performance = window.performance().ok_or("Could not get performance")?;
-    initialized(&performance)?;
 
     let mut cache = HashMap::new();
 
@@ -72,12 +69,10 @@ pub fn fib_hashmap(n: usize) -> Result<i32, JsValue> {
     Ok(result)
 }
 
-
 #[wasm_bindgen]
 pub fn fib_btreemap(n: usize) -> Result<i32, JsValue> {
     let window = web_sys::window().ok_or("WASM is not running in browser")?;
     let performance = window.performance().ok_or("Could not get performance")?;
-    initialized(&performance)?;
 
     let mut cache = BTreeMap::new();
 

@@ -42,7 +42,7 @@ type Test = {
   fns: TestFn[][]
 }
 
-type Perf = { type: 'js', duration: number } | { type: 'rust', duration: number, deserialize: number, serialize: number, alg: number }
+type Perf = { type: 'js', duration: number, result?: any } | { type: 'rust', duration: number, deserialize: number, serialize: number, alg: number, result?: any }
 
 const tests: Record<string, Record<number, Test>> = {}
 const define = (ns: number[], name: string, args: any[], ...fns: TestFn[]) => {
@@ -106,7 +106,7 @@ define(
   ],
   js('multiplyMatrices'),
   rs('matrix_mult'),
-  // rs('matrix_mult_simd'), // TODO: SIMD: glam
+  rs('matrix_mult_simd'),
 )
 
 define(
@@ -127,7 +127,7 @@ define(
   ],
   rs('crc64'),
   js('crc64'),
-  // rs('crc64_simd'), // TODO: SIMD: crc64fast?
+  rs('crc64_simd'),
 )
 defineSeq(
   [10, 100, 500],
@@ -170,14 +170,20 @@ const createPerfFn = (
       const N = n * configs.filter(c => c.fnName === fnName).length
 
       performance.mark('start', { detail: { i, n: N, type } })
-      await fn(...args) // WARN: Ignore result
+      let result = await fn(...args) // WARN: Ignore result
       performance.mark('end', { detail: { i, n: N, type } })
+
+      // NOTE: Skip if not first result
+      if (i !== 0) {
+          result = null
+      }
 
       const measure = performance.measure('duration', 'start', 'end')
       const perf: Perf = type === 'js'
-        ? { type, duration: measure.duration }
+        ? { type, duration: measure.duration, result }
         : {
           type,
+          result,
           duration: measure.duration,
           deserialize: performance.measure('deserialize', 'start', 'rs-alg-start').duration,
           alg: performance.measure('alg', 'rs-alg-start', 'rs-alg-end').duration,
@@ -478,4 +484,5 @@ select.addEventListener('change', () => {
 
 
   results.style.display = 'block'
+  console.log(perfs)
 })
