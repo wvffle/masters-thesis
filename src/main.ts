@@ -134,7 +134,7 @@ const createPerfFn = (
       let result = await fn(...currentArgs as any[])
       performance.mark('end', { detail: { i, n: N, type } })
 
-      result = i === 0 ? hash(result) : null
+      result = i === 0 ? hash({ result }) : null
 
       const measure = performance.measure('duration', 'start', 'end')
       const perf: Perf = type === 'js'
@@ -179,6 +179,12 @@ const toReducedSeqName = (names: string[]): string => {
 
 type Perfs = Record<string, Record<number, Record<string, Perf[]>>>
 const perfs: Perfs = (await loadObject('perfs')) ?? {}
+
+const exportData = async () => {
+  await saveAs(new Blob([JSON.stringify({ hash: hash(testsToRun), perfs })]), `results.${hash(testsToRun).slice(0, 8)}.json`)
+}
+window.exportData = exportData
+
 const testsToRun = Object.entries(tests).flatMap(([name, ns]) => {
 
   return Object.entries(ns).flatMap(([n, test]) => {
@@ -386,10 +392,7 @@ select.addEventListener('change', () => {
 
   const save = document.createElement('button')
   save.textContent = 'Export JSON'
-
-  save.addEventListener('click', async () => {
-     await saveAs(new Blob([JSON.stringify({ hash: hash(testsToRun), perfs })]), `results.${hash(testsToRun).slice(0, 8)}.json`)
-  })
+  save.addEventListener('click', exportData)
 
   results.append(save)
   results.append(document.createElement('br'))
