@@ -40,6 +40,34 @@ export function base64(data: string): string {
     return result;
 }
 
+export function base64Bytes(data: Uint8Array): string {
+    let result = '';
+    let buffer = 0;
+    let bits = 0;
+
+    for (let i = 0; i < data.length; i++) {
+        buffer = (buffer << 8) | data[i];
+        bits += 8;
+
+        while (bits >= 6) {
+            bits -= 6;
+            let index = (buffer >> bits) & 0b111111;
+            result += BASE64_ALPHABET[index];
+        }
+    }
+
+    if (bits > 0) {
+        buffer <<= 6 - bits;
+        result += BASE64_ALPHABET[(buffer & 0b111111)];
+    }
+
+    while (result.length % 4 !== 0) {
+        result += '=';
+    }
+
+    return result;
+}
+
 export function fib(n: number): number {
     if (n < 2) return n
     return fib(n - 1) + fib(n - 2)
@@ -193,4 +221,14 @@ export const argon2 = async () => {
     const b64salt = window.btoa(salt).replace(/=+$/, '');
     const b64hash = await bufferToBase64(hashArray).then(b64 => b64.replace(/=+$/, ''))
     return `$argon2id$v=19$m=${m},t=${t},p=${p}$${b64salt}$${b64hash}`
+}
+
+export function cryptoRandomString(n: number) {
+    const MAX_VALUES = 65536
+    const result = Array(Math.floor(n / MAX_VALUES)).fill(MAX_VALUES)
+    result.push(n % MAX_VALUES)
+
+    return result.flatMap(n => [...window.crypto.getRandomValues(new Uint8Array(n))])
+        .map(k => String.fromCharCode(k))
+        .join('')
 }

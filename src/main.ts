@@ -1,13 +1,17 @@
-import * as rust from './rust'
+import * as rust3 from './rust/opt-3'
+import * as rustS from './rust/opt-s'
+import * as rustZ from './rust/opt-z'
 import * as javascript from './js'
-import * as consts from './consts'
 import * as Plot from '@observablehq/plot'
 import hash from 'object-hash'
 import { slugify } from 'transliteration'
 import html2canvas from 'html2canvas'
+// @ts-expect-error no types
 import screenshot from 'canvas-screenshot'
-import { get, set } from 'idb-keyval'
+import { set, keys, delMany, getMany, setMany } from 'idb-keyval'
+// @ts-expect-error no types
 import { saveAs } from 'file-saver'
+import { defineTests } from './tests'
 
 const currentTest = document.querySelector('.current-test')!
 const currentN = document.querySelector('.current-n')!
@@ -21,9 +25,35 @@ currentN.textContent = localStorage.getItem('currentN')
 testsDone.textContent = localStorage.getItem('testsDone')
 testsAll.textContent = localStorage.getItem('testsAll')
 
+const storeObject = async (prefix: string, obj: Record<string, any>) => {
+  const data: any = Object.entries(obj)
+    .map(([k, v]) => [`${prefix}:${k}`, v])
+  await setMany(data)
+}
+
+const loadObject = async (prefix: string): Promise<Record<string, any>> => {
+  const k = await keys().then(keys => keys.filter((k: any) => k.startsWith(`${prefix}:`)))
+  const values = await getMany(k)
+
+  const data = {}
+    for (let i = 0; i < k.length; ++i) {
+    // @ts-expect-error ignore
+    data[k[i].slice(prefix.length + 1)] = values[i]
+  }
+  return data
+}
+
+const clearObject = async (prefix: string) => {
+  // @ts-expect-error ignore
+  const k = await keys().then(keys => keys.filter((k) => k.startsWith(`${prefix}:`)))
+  return delMany(k)
+}
+
 type AnyFn = (...args: any[]) => any
 
-type TestType = 'js' | 'rust'
+type RustTestType = 'rust:3' | 'rust:s' | 'rust:z'
+type JsTestType = 'js'
+type TestType = JsTestType | RustTestType
 
 interface TestFn {
   name: string
@@ -31,125 +61,45 @@ interface TestFn {
   fn: AnyFn
 }
 
+type TestArgs = any[] | (() => any[])
 type Test = {
-  args: any[]
+  args: TestArgs
   strat: 'default'
   fns: TestFn[]
 } | {
-  args: any[]
+  args: TestArgs
   strat: 'sequential'
   stages: string[],
   fns: TestFn[][]
 }
 
-type Perf = { type: 'js', duration: number, result?: any } | { type: 'rust', duration: number, deserialize: number, serialize: number, alg: number, result?: any }
+type Perf = { type: JsTestType, duration: number, result?: any } | { type: RustTestType, duration: number, deserialize: number, serialize: number, alg: number, result?: any }
 
 const tests: Record<string, Record<number, Test>> = {}
-const define = (ns: number[], name: string, args: any[], ...fns: TestFn[]) => {
+const define = (ns: number[], name: string, args: TestArgs, ...fns: TestFn[]) => {
   tests[name] ??= {}
   for (const n of ns) {
-    tests[name][n] = { args, strat: 'default', fns: fns.sort((a, b) => {
-      if (a.type === 'js' && b.type === 'rust') return -1
-      if (a.type === 'rust' && b.type === 'js') return 1
-      return 0
-    }) }
+    tests[name][n] = { args, strat: 'default', fns: fns.sort((a, b) => a.type.localeCompare(b.type)) }
   }
 }
 
-const defineSeq = (ns: number[], name: string, args: any[], stages: string[], ...fns: TestFn[][]) => {
+const defineSeq = (ns: number[], name: string, args: TestArgs, stages: string[], ...fns: TestFn[][]) => {
   tests[name] ??= {}
   for (const n of ns) {
-    tests[name][n] = { args, strat: 'sequential', stages, fns: fns.sort((a, b) => {
-      if (a[0].type === 'js' && b[0].type === 'rust') return -1
-      if (a[0].type === 'rust' && b[0].type === 'js') return 1
-      return 0
-    }) }
+    tests[name][n] = { args, strat: 'sequential', stages, fns: fns.map(lane => lane.sort((a, b) => a.type.localeCompare(b.type))).sort((a, b) => a[0].type.localeCompare(b[0].type)) }
   }
 }
 
-const js = (name: keyof typeof javascript): TestFn => ({ name, type: 'js', fn: javascript[name] })
-const rs = (name: keyof typeof rust): TestFn => ({ name, type: 'rust', fn: rust[name] })
+const js = (name: keyof typeof javascript): TestFn[] => [{ name, type: 'js', fn: javascript[name] }]
+const rs = (name: keyof typeof rust3): TestFn[] => [
+  { name, type: 'rust:3', fn: rust3[name] },
+  { name, type: 'rust:s', fn: rustS[name] },
+  { name, type: 'rust:z', fn: rustZ[name] },
+]
 
-
-define(
-  [100, 1e3, 1e4],
-  'Reenkodowanie stringów (String 1MB)',
-  [consts.TEXT_1M],
-  rs('reencode_strings')
-)
-define(
-  [100, 1e3, 1e4],
-  'Enkodowanie do Base64 (String 1MB)',
-  [consts.TEXT_1M],
-  js('btoa'),
-  js('base64'),
-  rs('base64'),
-  rs('base64_simd')
-)
-
-define(
-  [100, 250, 500],
-  '30 liczba Fibonacciego (rekurencja)',
-  [30],
-  js('fib'),
-  rs('fib')
-)
-
-const A4 = javascript.generateMatrix(4, 4)
-const B4 = javascript.generateMatrix(4, 4)
-define(
-  [100, 1e3, 1e4],
-  'Mnożenie macierzy 4x4',
-  [
-    A4,
-    B4
-  ],
-  js('multiplyMatrices'),
-  rs('matrix_mult'),
-  rs('matrix_mult_simd'),
-)
-
-define(
-  [100, 1e3, 1e4],
-  'CRC32 (Plik 1MB)',
-  [
-    consts.TEXT_1M_UINT8
-  ],
-  rs('crc32'),
-  js('crc32'),
-)
-
-define(
-  [100, 1e3, 1e4],
-  'CRC64 (Plik 1MB)',
-  [
-    consts.TEXT_1M_UINT8
-  ],
-  rs('crc64'),
-  js('crc64'),
-  rs('crc64_simd'),
-)
-defineSeq(
-  [10, 100, 500],
-  'API DOM',
-  [
-    100
-  ],
-  ['Tworzenie 100 elementów', 'Aktualizacja co drugiego elementu z 100', 'Aktualizacja co drugiego elementu z 100', 'Usuwanie 100 elementów'],
-  [js('createElements'), js('updateEvery2ndElement'), js('updateEvery2ndElement'), js('clearElements')],
-  [rs('create_elements'), rs('update_every_2nd_element'), rs('update_every_2nd_element'), rs('clear_elements')],
-)
-
-// defineSeq(
-//   [1, 10, 100],
-//   'API DOM',
-//   [
-//     10000
-//   ],
-//   ['Tworzenie 10000 elementów', 'Aktualizacja co drugiego elementu z 10000', 'Aktualizacja co drugiego elementu z 10000', 'Usuwanie 10000 elementów'],
-//   [js('createElements'), js('updateEvery2ndElement'), js('updateEvery2ndElement'), js('clearElements')],
-//   [rs('create_elements'), rs('update_every_2nd_element'), rs('update_every_2nd_element'), rs('clear_elements')],
-// )
+defineTests({
+  define, defineSeq, rs, js
+})
 
 type PerfFnConfig = {
   fn: AnyFn,
@@ -157,26 +107,34 @@ type PerfFnConfig = {
   fnName: string,
 }
 
+const argsCache = (await loadObject('argsCache')) ?? {}
 const createPerfFn = (
   configs: PerfFnConfig[],
   n: number,
   type: TestType,
-  args: any[]
+  args: TestArgs
 ) => async () => {
   performance.clearMarks()
 
   for (let i = 0; i < n; i++) {
+    let currentArgs = args
+
     for (const { testName, fnName, fn } of configs) {
+      if (typeof args === 'function') {
+        argsCache[testName] ??= {}
+        if (typeof argsCache[testName][n] === 'undefined') {
+          argsCache[testName][n] = args()
+          await set(`argsCache:${testName}`, argsCache[testName])
+        }
+        currentArgs = argsCache[testName][n]
+      }
       const N = n * configs.filter(c => c.fnName === fnName).length
 
       performance.mark('start', { detail: { i, n: N, type } })
-      let result = await fn(...args) // WARN: Ignore result
+      let result = await fn(...currentArgs as any[])
       performance.mark('end', { detail: { i, n: N, type } })
 
-      // NOTE: Skip if not first result
-      if (i !== 0) {
-          result = null
-      }
+      result = i === 0 ? hash(result) : null
 
       const measure = performance.measure('duration', 'start', 'end')
       const perf: Perf = type === 'js'
@@ -196,7 +154,6 @@ const createPerfFn = (
       perfs[testName][N][fnName] ??= []
       perfs[testName][N][fnName].push(perf)
     }
-
   }
 }
 
@@ -220,7 +177,8 @@ const toReducedSeqName = (names: string[]): string => {
 }
 
 
-const perfs: Record<string, Record<number, Record<string, Perf[]>>> = (await get('perfs')) ?? {}
+type Perfs = Record<string, Record<number, Record<string, Perf[]>>>
+const perfs: Perfs = (await loadObject('perfs')) ?? {}
 const testsToRun = Object.entries(tests).flatMap(([name, ns]) => {
 
   return Object.entries(ns).flatMap(([n, test]) => {
@@ -260,7 +218,7 @@ const run = async () => {
   if (i < testsToRun.length) {
     await testsToRun[i].fn()
     localStorage.setItem('i', `${i + 1}`)
-    await set('perfs', perfs)
+    await storeObject('perfs', perfs)
     localStorage.setItem('currentTest', testsToRun[i + 1]?.name)
     localStorage.setItem('currentN', `${+testsToRun[i + 1]?.n}`)
     localStorage.setItem('testsDone', `${+(localStorage.getItem('testsDone') ?? 0) + 1}`)
@@ -276,12 +234,21 @@ const running = localStorage.getItem('running') === hash(testsToRun)
 
 if (!running) {
   btn.textContent = 'Start'
+  const error: HTMLDivElement | null = document.querySelector('.error')
+  const imp: HTMLDivElement = document.querySelector('.import')!
+  imp.style.display = 'block'
+
+  if (error) {
+    error.style.display = 'block'
+    error.textContent = 'State invalidated, please restart the tests'
+  }
 }
 
 btn.addEventListener('click', async () => {
   if (!running) {
     localStorage.setItem('i', '0')
-    await set('perfs', {})
+    await clearObject('perfs')
+    await clearObject('argsCache')
     localStorage.setItem('startedAt', +new Date() + '')
     localStorage.setItem('running', hash(testsToRun))
     localStorage.setItem('hash', hash(testsToRun))
@@ -299,24 +266,52 @@ btn.addEventListener('click', async () => {
 
 
 setTimeout(async () => {
-  if (running && !await run()) {
-    location.reload()
-    throw new Error('Reloading')
-  }
+  try {
 
-  if (localStorage.getItem('hash') !== hash(testsToRun)) {
+    if (running && !await run()) {
+      location.reload()
+      throw new Error('Reloading')
+    }
+
+    if (localStorage.getItem('hash') !== hash(testsToRun)) {
+      localStorage.setItem('running', '')
+      return
+    }
+
     localStorage.setItem('running', '')
-    return
-  }
+    header.remove()
+    select.style.display = 'block'
+    imp.style.display = 'block'
+    select.value = Object.keys(perfs)[0]
+    select.dispatchEvent(new Event('change'))
 
-  localStorage.setItem('running', '')
-  header.remove()
-  select.style.display = 'block'
-  select.value = Object.keys(perfs)[0]
-  select.dispatchEvent(new Event('change'))
+  } catch (err) {
+    if ((err as Error).message === 'Reloading') return
+    console.error(err)
+
+    const error: HTMLDivElement | null = document.querySelector('.error')
+    if (error) {
+      error.style.display = 'block'
+    }
+  }
 }, 10)
 
 const header = document.querySelector('header')!
+const imp: HTMLButtonElement = document.querySelector('.import')!
+imp.addEventListener('click', () => {
+  const fileInput = document.createElement('input')
+  fileInput.type = 'file'
+  fileInput.accept = 'application/json'
+  fileInput.addEventListener('input', async () => {
+    const [file] = fileInput.files!
+    const data = JSON.parse(await file.text())
+    localStorage.setItem('hash', hash(testsToRun))
+    await clearObject('perfs')
+    await storeObject('perfs', data.perfs)
+    location.reload()
+  })
+  fileInput.click()
+})
 
 const select: HTMLSelectElement = document.querySelector('select')!
 for (const name in perfs) {
@@ -329,6 +324,7 @@ const results: HTMLDivElement = document.querySelector('.results')!
 select.addEventListener('change', () => {
   results.innerHTML = ''
   const ns = perfs[select.value]
+  if (!ns) return
 
   type DataType = {
     n: string
@@ -392,7 +388,7 @@ select.addEventListener('change', () => {
   save.textContent = 'Export JSON'
 
   save.addEventListener('click', async () => {
-     await saveAs(new Blob([JSON.stringify({ hash: hash(testsToRun), perfs })]))
+     await saveAs(new Blob([JSON.stringify({ hash: hash(testsToRun), perfs })]), `results.${hash(testsToRun).slice(0, 8)}.json`)
   })
 
   results.append(save)
@@ -414,7 +410,9 @@ select.addEventListener('change', () => {
   const lang = (lang: string) => {
     switch (lang) {
       case 'js': return '$JS$'
-      case 'rust': return '$RS_{1}$'
+      case 'rust:3': return '$RS_{3}$'
+      case 'rust:s': return '$RS_{s}$'
+      case 'rust:z': return '$RS_{z}$'
       default: return lang
     }
   }

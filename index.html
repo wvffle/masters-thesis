@@ -25,6 +25,11 @@
     body {
       margin: 0;
     }
+
+    .error {
+      display: none;
+      color: red;
+    }
   </style>
 </head>
 
@@ -32,11 +37,13 @@
   <div id="app">
     <nav>
       <button>Stop</button>
+      <button style="display:none" class="import">Import</button>
       <select style="display:none"></select>
     </nav>
     <header>
       Currently runnung: <span class="current-test"></span> (n = <span class="current-n">0</span>) <br>
       Test <span class="tests-done">0</span>/<span class="tests-all">0</span>
+      <div class="error">An execution error ocurred, please check the console</div>
     </header>
     <div class="results"></div>
     <div class="container"></div>

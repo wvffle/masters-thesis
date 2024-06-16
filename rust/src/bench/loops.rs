@@ -1,5 +1,5 @@
 use crate::utils::*;
-use glam::{Mat4, Vec4};
+use glam::Mat4;
 use serde_wasm_bindgen::{from_value, to_value};
 use wasm_bindgen::prelude::*;
 
@@ -41,7 +41,7 @@ pub fn matrix_mult_simd(matrix_a: JsValue, matrix_b: JsValue) -> Result<JsValue,
     let a = Mat4::from_cols_array_2d(&a);
     let b = Mat4::from_cols_array_2d(&b);
 
-    let result = a * b;
+    let result = a.transpose() * b.transpose();
 
     start_algorithm(&performance)?;
 
