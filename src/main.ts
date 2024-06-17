@@ -86,7 +86,7 @@ const define = (ns: number[], name: string, args: TestArgs, ...fns: TestFn[]) =>
 const defineSeq = (ns: number[], name: string, args: TestArgs, stages: string[], ...fns: TestFn[][]) => {
   tests[name] ??= {}
   for (const n of ns) {
-    tests[name][n] = { args, strat: 'sequential', stages, fns: fns.map(lane => lane.sort((a, b) => a.type.localeCompare(b.type))).sort((a, b) => a[0].type.localeCompare(b[0].type)) }
+    tests[name][n] = { args, strat: 'sequential', stages, fns }
   }
 }
 
@@ -189,9 +189,27 @@ const testsToRun = Object.entries(tests).flatMap(([name, ns]) => {
 
   return Object.entries(ns).flatMap(([n, test]) => {
     if (test.strat === 'sequential') {
+      function transpose(matrix) {
+        return matrix[0].map((col, c) => matrix.map((row, r) => matrix[r][c]));
+      }
 
-      return test.fns.map(fns => {
-        const [{ type }] = fns
+      return test.fns.map(x => transpose(x)).flatMap(fns => {
+        return fns.map(fns => {
+          const [{ type }] = fns
+          return {
+            name: `${name} // ${type} // ${toReducedSeqName(fns.map(f => f.name))}`,
+            n,
+            fn: async () => {
+              const configs = fns.map(({ fn, name: fnName }, i) => ({
+                testName: `${name}: ${test.stages[i++]}`,
+                fnName,
+                fn
+              }))
+
+              await createPerfFn(configs, +n, type, test.args)()
+            }
+          }
+        })
 
         return {
           name: `${name} // ${type} // ${toReducedSeqName(fns.map(f => f.name))}`,
@@ -216,6 +234,7 @@ const testsToRun = Object.entries(tests).flatMap(([name, ns]) => {
     }))
   }, 0)
 }, 0)
+console.log(testsToRun)
 testsAll.textContent = testsToRun.length + ''
 
 const run = async () => {
