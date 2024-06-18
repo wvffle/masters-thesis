@@ -28,11 +28,3 @@ pub fn request_animation_frame(f: &Closure<dyn FnMut()>) {
         .request_animation_frame(f.as_ref().unchecked_ref())
         .expect("should register `requestAnimationFrame` OK");
 }
-
-pub fn random_f32(min: f32, max: f32) -> f32 {
-    lazyrand::rand_f64() as f32 * (max - min) + min
-}
-
-pub fn random_f64(min: f64, max: f64) -> f64 {
-    lazyrand::rand_f64() as f64 * (max - min) + min
-}
