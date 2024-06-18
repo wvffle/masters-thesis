@@ -422,6 +422,10 @@ select.addEventListener('change', () => {
   textarea.style.height = '300px'
   textarea.readOnly = true
 
+  const descarea = document.createElement('textarea')
+  descarea.style.width = '1600px'
+  descarea.style.height = '300px'
+  descarea.readOnly = true
 
   const expo = (x: number) => {
     if (x < 1000) return x
@@ -451,19 +455,17 @@ select.addEventListener('change', () => {
   const nKeys = Object.keys(ns)
   const nCount = nKeys.length
   let i = 0, j = 0
-  textarea.textContent = `
-\\fig{Wykres średniego czasu wykonania testu „${select.value}”}{${slugify(select.value)}.png}
-
+  descarea.textContent = `
 \\begin{table}[h!]
   \\centering
-  \\begin{NiceTabular}{clll}[hvlines]
-    \\textbf{Język} & $F_i$ & \\textbf{Funkcja} & \\textbf{Opis funkcji} \\\\
+  \\begin{NiceTabular}{cllX}[hvlines]
+    \\textbf{Język} & $\\mathbf{F_i}$ & \\textbf{Funkcja} & \\textbf{Opis funkcji} \\\\
     ${
       Object.entries(sum).map(([language, fns]) => {
         const fnCount = Object.keys(fns).length
         return `\\Block{${fnCount}-1}{${lang(language)}} & ${
           Object.keys(fns).map((fn) => {
-            return `$F_{${++j}}$ & ${fn.replace(/(_)/g, '\\$1')} &  \\\\ % TODO: Dodać opis!`
+            return `$F_{${++j}}$ & ${fn.replace(/(_)/g, '\\$1')} & \\Block[l]{1-1}{opis funkcji} \\\\ % TODO: Dodać opis!`
           }).join('\n      & ')
         }`
       }).join('\n    ')
@@ -473,6 +475,10 @@ select.addEventListener('change', () => {
   \\caption{Opis funkcji dla testu „${select.value}”}
   \\label{tab:${slugify(select.value)}-fns}
 \\end{table}
+  `.trim()
+
+  textarea.textContent = `
+\\fig{Wykres średniego czasu wykonania testu „${select.value}”}{${slugify(select.value)}.png}
 
 \\begin{table}[h!]
   \\centering
@@ -500,7 +506,9 @@ select.addEventListener('change', () => {
   \\label{tab:${slugify(select.value)}}
 \\end{table}
 `.trim()
+
   results.append(textarea)
+  results.append(descarea)
 
 
   results.style.display = 'block'
