@@ -485,7 +485,7 @@ select.addEventListener('change', () => {
   \\begin{NiceTabular}{cl${'c'.repeat(3 * nCount)}}[corners,hvlines]
     & & \\Block{1-${3 * nCount}}{\\textbf{Średni czas wykonania [ms]}} \\\\
     & & ${nKeys.map(n => `\\Block{1-3}{$n=${expo(+n)}$}`).join(' & & & ')} \\\\
-    &${' & $\\overline{T}_S$ &  $\\overline{T}_A$ & $\\overline{T}_D$'.repeat(nCount)} \\\\
+    &${' & $\\overline{T}_D$ &  $\\overline{T}_A$ & $\\overline{T}_S$'.repeat(nCount)} \\\\
     ${
       Object.entries(sum).map(([language, fns]) => {
         const fnCount = Object.keys(fns).length
