@@ -17,6 +17,10 @@
       gap: 1rem;
     }
 
+    nav .thesis {
+      order: -1;
+    }
+
     nav,
     header {
       padding: 1rem;
@@ -26,20 +30,68 @@
       margin: 0;
     }
 
+    body:not(.running) {
+      display: flex;
+      justify-content: center;
+    }
+
+
     .error {
       display: none;
       color: red;
+    }
+
+    td:not([rowspan]) {
+      text-align: right;
+    }
+
+    td,
+    th {
+      border: 1px solid black;
+      padding: 6px;
+      font-weight: normal;
+    }
+
+
+    .bl {
+      border-left-width: 2px;
+    }
+
+    tr td:first-child[rowspan],
+    tr td:first-child[rowspan]~td {
+      border-top-width: 2px;
+    }
+
+    table.measurements tr td:first-child[rowspan]~td:nth-child(3n+2),
+    table.measurements tr td:first-child:not([rowspan])~td:nth-child(3n+1),
+    .br {
+      border-right-width: 2px;
+    }
+
+    table {
+      border-collapse: collapse;
+      margin-bottom: 2rem
+    }
+
+    .katex-html .base {
+      display: none;
+    }
+
+    tbody tr:first-child td {
+      border-top-width: 3px !important;
     }
   </style>
   <script src="/hack-performance-api.js"></script>
 </head>
 
-<body>
+<body class="running">
   <div id="app">
     <nav>
       <button>Stop</button>
-      <button style="display:none" class="import">Import</button>
+      <button style="display:none" class="official-results">Import official results</button>
+      <button style="display:none" class="import">Import JSON</button>
       <select style="display:none"></select>
+      <button style="display:none" class="thesis">Thesis</button>
     </nav>
     <header>
       Currently runnung: <span class="current-test"></span> (n = <span class="current-n">0</span>) <br>
